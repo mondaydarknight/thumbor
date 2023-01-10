@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thumbor-deployment
+  namespace: thumbor
+  labels:
+    k8s-app: thumbor
+spec:
+  selector:
+    matchLabels:
+      k8s-app: thumbor
+  template:
+    metadata:
+      labels:
+        k8s-app: thumbor
+    spec:
+      containers:
+        - name: thumbor
+          image: localhost:5000/thumbor:1.0
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: thumbor-secret
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8888
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 60
+          ports:
+            - containerPort: 8888
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule

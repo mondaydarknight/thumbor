@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: thumbor-service
+  namespace: thumbor
+  labels:
+    k8s-app: thumbor
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: NodePort
+  selector:
+    k8s-app: thumbor
+  ports:
+    - name: thumbor-port
+      port: 80
+      protocol: TCP
+      targetPort: 8888

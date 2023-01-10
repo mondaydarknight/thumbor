@@ -1,0 +1,3 @@
+- op: add
+  path: /metadata/annotations/cloud.google.com~1backend-config
+  value: '{"ports":{"thumbor-port":"thumbor-backendconfig-stag"}}'

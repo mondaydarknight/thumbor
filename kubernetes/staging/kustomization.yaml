@@ -1,0 +1,48 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: thumbor
+nameSuffix: -stag
+bases:
+  - ../base
+
+commonLabels:
+  env: staging
+
+configMapGenerator:
+  - name: k8s-config
+    envs:
+      - k8s.properties
+
+patchesJson6902:
+  - path: thumbor-ingress-patch.yaml
+    target:
+      group: networking.k8s.io
+      kind: Ingress
+      name: thumbor-ingress
+      version: v1
+  - path: thumbor-service-patch.yaml
+    target:
+      kind: Service
+      name: thumbor-service
+      version: v1
+
+patchesStrategicMerge:
+  - thumbor-deployment-replica-rollout-strategy.yaml
+  - thumbor-deployment-resource-patch.yaml
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: k8s-config
+      fieldPath: data.SSL_CERT
+    targets:
+      - select:
+          kind: Ingress
+          name: thumbor-ingress
+        fieldPaths:
+          - metadata.annotations.[ingress.gcp.kubernetes.io/pre-shared-cert]
+
+secretGenerator:
+  - name: thumbor-secret
+    envs:
+      - .env

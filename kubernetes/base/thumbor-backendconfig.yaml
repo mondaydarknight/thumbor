@@ -1,0 +1,18 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: thumbor-backendconfig
+  namespace: thumbor
+  labels:
+    k8s-app: thumbor
+spec:
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 60
+    timeoutSec: 5
+    port: 8888
+    type: HTTP
+    requestPath: /healthcheck
+  logging:
+    enable: false

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thumbor-deployment
+  namespace: thumbor
+spec:
+  template:
+    spec:
+      containers:
+        - name: thumbor
+          resources:
+            requests:
+              cpu: 1500m
+              memory: 500Mi
+            limits:
+              cpu: 2
+              memory: 1Gi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: thumbor-pool

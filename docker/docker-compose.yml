@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+  thumbor:
+    build:
+      context: ./thumbor
+      args:
+        - THUMBOR_TAG=7.0.0
+    environment:
+      - CORS_ALLOW_ORIGIN=*
+      - ENGINE=thumbor_video_engine.engines.video
+      - FFMPEG_USE_GIFSICLE_ENGINE=True
+      - FILTERS=['thumbor_video_engine.filters.format','thumbor_video_engine.filters.still']
+      - THUMBOR_NUM_PROCESSES=${THUMBOR_NUM_PROCESSES:-1}
+    ports:
+      - 8888:80
+    volumes:
+      - ./data:/data
+    restart: always

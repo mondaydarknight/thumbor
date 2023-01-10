@@ -1,0 +1,27 @@
+name: build-push-gcr
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+jobs:
+  publish-gcr:
+    if: startsWith(github.ref, 'refs/tags/gcr-v')
+    name: Publishing thumbor image to registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup thumbor container
+        id: setup-thumbor
+        run: |
+          echo "::set-output name=tag::${GITHUB_REF#refs/*/gcr-v}"
+      - name: Publishing thumbor image to registry
+        uses: ./.github/actions/gcr
+        with:
+          build_args: THUMBOR_TAG=7.0.0
+          gcr_auth_key: ${{ secrets.GCR_AUTH_KEY }}
+          registry: asia.gcr.io
+          project_id: 160706
+          image: thumbor
+          tags: ${{ steps.setup-thumbor.outputs.tag }}
+          context: ./docker/thumbor

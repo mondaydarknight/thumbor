@@ -1,0 +1,66 @@
+name: Reusable workflow to deploy K8S cluster
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: The deployment target of the environment.
+        type: string
+        required: true
+jobs:
+  deploy-k8s-cluster:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      GITHUB_ICON: https://github.githubassets.com/favicon.ico
+      K8S_TEMPLATE_PATH: ./kubernetes/thumbor/${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup environment file
+        run: |
+          echo SECURITY_KEY="${{ secrets.SECURITY_KEY }}" >> ${{ env.K8S_TEMPLATE_PATH }}/.env
+          echo SSL_CERT="${{ secrets.SSL_CERT }}" >> ${{ env.K8S_TEMPLATE_PATH }}/k8s.properties
+      - name: Verify K8S configuration
+        uses: ./.github/actions/k8s-setup
+        with:
+          cluster: ${{ secrets.K8S_CLUSTER }}
+          context: ${{ secrets.K8S_CONTEXT }}
+          server: ${{ secrets.K8S_SERVER }}
+          template_path: ${{ env.K8S_TEMPLATE_PATH }}
+          token: ${{ secrets.K8S_TOKEN }}
+          user: ${{ secrets.K8S_USER }}
+          validate: true
+      - name: Setup K8S cluster to the environment
+        uses: ./.github/actions/k8s-setup
+        with:
+          cluster: ${{ secrets.K8S_CLUSTER }}
+          context: ${{ secrets.K8S_CONTEXT }}
+          server: ${{ secrets.K8S_SERVER }}
+          template_path: ${{ env.K8S_TEMPLATE_PATH }}
+          token: ${{ secrets.K8S_TOKEN }}
+          user: ${{ secrets.K8S_USER }}
+      - name: Set deployment status
+        id: deployment-status
+        if: always()
+        run: |
+          echo "::set-output name=color::$([[ ${{ job.status }} == 'success' ]] && echo '#00FF00' || echo '#FF0000')"
+          echo "::set-output name=title::$(echo ${{ job.status }} | tr '[:lower:]' '[:upper:]')"
+      - name: Notify Slack notification
+        uses: slackapi/slack-github-action@v1.22.0
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "${{ steps.deployment-status.outputs.color }}",
+                  "title": "${{ steps.deployment-status.outputs.title }}",
+                  "text": "${{ github.event.repository.name }} build `${{ inputs.environment }}` <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}> for <${{ github.event.head_commit.url }}|${{ github.ref }}>",
+                  "mrkdwn_in": ["pretext", "title", "text", "footer"],
+                  "footer": "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> by ${{ github.actor }}",
+                  "footer_icon": "${{ env.GITHUB_ICON }}"
+                }
+              ]
+            }

@@ -1,0 +1,31 @@
+name: release-workflow
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+jobs:
+  setup-deployment:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_ENABLED: ${{ secrets.DEPLOY_ENABLED }}
+    outputs:
+      status: ${{ steps.check-deployment-status.outputs.status }}
+    steps:
+      - name: Check deployment status needed to run the job
+        id: check-deployment-status
+        if: ${{ env.DEPLOY_ENABLED == 'true' }}
+        run: echo "::set-output name=status::ok"
+  deploy-staging:
+    uses: ./.github/workflows/reusable-deploy.yml
+    needs: [setup-deployment]
+    with:
+      environment: staging
+    secrets: inherit
+  deploy-production:
+    if: ${{ needs.setup-deployment.outputs.status == 'ok' }}
+    uses: ./.github/workflows/reusable-deploy.yml
+    needs: [deploy-staging]
+    with:
+      environment: production
+    secrets: inherit
